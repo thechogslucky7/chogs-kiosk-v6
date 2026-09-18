@@ -225,7 +225,40 @@ main{max-width:760px;margin:auto;padding:9px 20px 22px}
    <div class="stat-value" id="cashout">₱0.00</div>
   </div>
  </section>
+<section class="panel" id="income-breakdown">
+  <div class="title-row">
+    <div class="plus">₱</div>
+    <div class="title-text">
+      <h2>Today's Income Breakdown</h2>
+      <p>See where your commission comes from</p>
+    </div>
+  </div>
 
+  <div class="history-row">
+    <span>💙 GCash Cash-In</span>
+    <strong id="breakdown-cashin">₱0.00</strong>
+  </div>
+
+  <div class="history-row">
+    <span>💗 GCash Cash-Out</span>
+    <strong id="breakdown-cashout">₱0.00</strong>
+  </div>
+
+  <div class="history-row">
+    <span>🧡 E-Loading</span>
+    <strong id="breakdown-eload">₱0.00</strong>
+  </div>
+
+  <div class="history-row">
+    <span>🩵 Bills Payment</span>
+    <strong id="breakdown-bills">₱0.00</strong>
+  </div>
+
+  <div class="history-row" style="border-bottom:0">
+    <strong>TOTAL COMMISSION</strong>
+    <strong id="breakdown-total">₱0.00</strong>
+  </div>
+</section>
  <section class="stats service-stats">
   <div class="stat orange">
    <div class="stat-head"><div class="stat-icon">▯</div><span>E-Loading</span></div>
@@ -322,12 +355,18 @@ function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function render(){
  const all=rows(),r=all.filter(visible),sum=k=>r.reduce((a,x)=>a+Number(x[k]||0),0);
  const by=s=>r.filter(x=>x.service===s).reduce((a,x)=>a+Number(x.amount||0),0);
+ const incomeBy=s=>r.filter(x=>x.service===s).reduce((a,x)=>a+Number(x.commission||0),0);
  $("count").textContent=r.length;
  $("income").textContent=money(sum("commission"));
  $("cashin").textContent=money(by("GCash Cash-In"));
  $("cashout").textContent=money(by("GCash Cash-Out"));
  $("eload").textContent=money(by("E-Loading"));
  $("bills").textContent=money(by("Bills Payment"));
+ $("breakdown-cashin").textContent=money(incomeBy("GCash Cash-In"));
+ $("breakdown-cashout").textContent=money(incomeBy("GCash Cash-Out")); 
+ $("breakdown-eload").textContent=money(incomeBy("E-Loading"));
+ $("breakdown-bills").textContent=money(incomeBy("Bills Payment"));
+ $("breakdown-total").textContent=money(sum("commission"));
  const sorted=[...all].sort((a,b)=>new Date(b.date)-new Date(a.date));
  $("history").innerHTML=sorted.length?sorted.map(x=>`
   <div class="history-row">
