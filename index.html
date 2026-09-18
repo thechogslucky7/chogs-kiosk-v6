@@ -313,6 +313,7 @@ main{max-width:760px;margin:auto;padding:9px 20px 22px}
 
    <div class="full">
     <button class="save" id="save">▣ &nbsp; Save Transaction</button>
+    <button class="action" id="import">⇧ &nbsp; Import Transactions</button>
    </div>
   </div>
 
@@ -397,8 +398,46 @@ function backup(){
  const blob=new Blob([JSON.stringify(rows(),null,2)],{type:"application/json"});
  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="chogs-kiosk-backup.json";a.click();
  setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("Backup created");
+}function importData(){
+  const input=document.createElement("input");
+  input.type="file";
+  input.accept=".json,application/json";
+  input.onchange=()=>{
+    const file=input.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const data=JSON.parse(reader.result);
+        if(!Array.isArray(data))throw new Error();
+        const allowed=["GCash Cash-In","GCash Cash-Out","E-Loading","Bills Payment"];
+        const clean=data.filter(x=>x&&x.date&&allowed.includes(x.service)).map(x=>({
+          date:String(x.date),
+          service:String(x.service),
+          amount:Number(x.amount||0),
+          commission:Number(x.commission||0),
+          reference:String(x.reference||"")
+        }));
+        if(!clean.length){toast("No valid transactions found");return}
+        const a=rows();
+        const key=x=>[x.date,x.service,x.amount,x.commission,x.reference].join("|");
+        const existing=new Set(a.map(key));
+        const fresh=clean.filter(x=>!existing.has(key(x)));
+        if(!fresh.length){toast("All transactions already imported");return}
+        if(!confirm("Import "+fresh.length+" transactions and keep existing data?"))return;
+        saveRows(a.concat(fresh));
+        render();
+        toast(fresh.length+" transactions imported ✓");
+      }catch(e){
+        toast("Import failed — use a Chogs Kiosk JSON file");
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 render();
+ $("import").onclick=importData;
 </script>
 </body>
 </html>
