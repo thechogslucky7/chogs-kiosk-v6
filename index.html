@@ -371,24 +371,53 @@ function render(){
  $("breakdown-bills").textContent=money(incomeBy("Bills Payment"));
  $("breakdown-total").textContent=money(sum("commission"));
  const sorted=[...all].sort((a,b)=>new Date(b.date)-new Date(a.date));
- $("history").innerHTML=sorted.length?sorted.map(x=>`
+ $("history").innerHTML=sorted.length?sorted.map(x=>{
+  const i=all.indexOf(x);
+  return `
   <div class="history-row">
-   <div><b>${esc(x.service)}</b><br><small>${new Date(x.date).toLocaleString()}${x.reference?" · "+esc(x.reference):""}</small></div>
-   <div style="text-align:right"><b>${money(x.commission)}</b><br><small>Txn ${money(x.amount)}</small></div>
-  </div>`).join(""):'<div class="empty">No transactions yet.</div>';
+    <div><b>${esc(x.service)}</b><br><small>${new Date(x.date).toLocaleString()}${x.reference?" · "+esc(x.reference):""}</small></div>
+    <div style="text-align:right">
+      <b>${money(x.commission)}</b><br>
+      <small>Txn ${money(x.amount)}</small><br>
+      <button onclick="editTransaction(${i})" style="margin-top:5px;padding:6px 10px;border:0;border-radius:8px;background:#eee7ff;color:#5713c8;font-weight:800">✏️ Edit</button>
+    </div>
+  </div>`;
+}).join(""):'<div class="empty">No transactions yet.</div>';
 }
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
  b.classList.add("active");period=b.dataset.period;render();
 });
 $("save").onclick=()=>{
- const amount=Number($("amount").value||0),commission=Number($("commission").value||0);
- if(amount<=0&&commission<=0){toast("Please enter an amount or commission");return}
- const a=rows();
- a.push({date:$("date").value||localNow(),service:$("service").value,amount,commission,reference:$("reference").value.trim()});
- saveRows(a);clearFields();render();toast("Transaction saved ✓");
+  const amount=Number($("amount").value||0),commission=Number($("commission").value||0);
+  if(amount<=0&&commission<=0){toast("Please enter an amount or commission");return}
+  const a=rows();
+  const item={date:$("date").value||localNow(),service:$("service").value,amount,commission,reference:$("reference").value.trim()};
+  if(editIndex>=0){
+    a[editIndex]=item;
+    editIndex=-1;
+    $("save").textContent="▣ Save Transaction";
+    saveRows(a);clearFields();render();toast("Transaction updated ✓");
+  }else{
+    a.push(item);
+    saveRows(a);clearFields();render();toast("Transaction saved ✓");
+  }
 };
-function clearFields(){$("amount").value="";$("commission").value="";$("reference").value="";$("date").value=localNow()}
+let editIndex=-1;
+
+function editTransaction(i){
+  const a=rows(),x=a[i];
+  if(!x)return;
+  editIndex=i;
+  $("date").value=x.date;
+  $("service").value=x.service;
+  $("amount").value=x.amount;
+  $("commission").value=x.commission;
+  $("reference").value=x.reference||"";
+  $("save").textContent="✏️ Update Transaction";
+  document.querySelector(".panel").scrollIntoView({behavior:"smooth"});
+}function clearFields(){editIndex=-1;
+$("save").textContent="▣ Save Transaction";$("amount").value="";$("commission").value="";$("reference").value="";$("date").value=localNow()}
 $("clear").onclick=clearFields;
 $("delete").onclick=()=>{if(confirm("Delete all transactions saved on this device?")){localStorage.removeItem(KEY);render();toast("All transactions deleted")}};
 function focusForm(){document.querySelector(".panel").scrollIntoView({behavior:"smooth"})}
